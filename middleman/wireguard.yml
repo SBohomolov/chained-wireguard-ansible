@@ -87,3 +87,41 @@
     async: 1
     poll: 0
     ignore_errors: true
+
+    - name: Download and install WireGuard UI
+      shell: >
+        wget https://github.com/ngoduykhanh/wireguard-ui/releases/download/v0.6.1/wireguard-ui-v0.6.1-linux-amd64.tar.gz &&
+        tar -xvzf wireguard-ui-v0.6.1-linux-amd64.tar.gz &&
+        mkdir -p /opt/wireguard-ui &&
+        mv wireguard-ui /opt/wireguard-ui/
+      args:
+        chdir: "/tmp"
+
+    - name: Create WireGuard UI systemd service file
+      copy:
+        dest: /etc/systemd/system/wireguard-ui-daemon.service
+        content: |
+          [Unit]
+          Description=WireGuard UI Daemon
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=root
+          Group=root
+          Type=simple
+          WorkingDirectory=/opt/wireguard-ui
+          ExecStart=/opt/wireguard-ui/wireguard-ui
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Start WireGuard UI Daemon
+      systemd:
+        name: wireguard-ui-daemon
+        state: started
+        enabled: yes
